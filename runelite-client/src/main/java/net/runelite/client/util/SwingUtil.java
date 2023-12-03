@@ -222,7 +222,15 @@ public class SwingUtil
 			? ImageUtil.resizeImage(navigationButton.getIcon(), iconSize, iconSize)
 			: navigationButton.getIcon();
 
-		final JButton button = new JButton();
+		final JButton button = new JButton(){
+			public Point getToolTipLocation(MouseEvent e) {
+				AffineTransform affinetransform = new AffineTransform();
+				FontRenderContext frc = new FontRenderContext(affinetransform,true,true);
+				Font font = this.getFont();
+				int offset = (int)(font.getStringBounds(this.getToolTipText(), frc).getWidth());
+				return new Point(-offset, 0); //shift the tooltip to the right
+			}
+		};
 		button.setSize(scaledImage.getWidth(), scaledImage.getHeight());
 		button.setToolTipText(navigationButton.getTooltip());
 		button.setIcon(new ImageIcon(scaledImage));
