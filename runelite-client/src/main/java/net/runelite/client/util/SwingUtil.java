@@ -217,8 +217,9 @@ public class SwingUtil
 				AffineTransform affinetransform = new AffineTransform();
 				FontRenderContext frc = new FontRenderContext(affinetransform,true,true);
 				Font font = this.getFont();
-				int offset = (int)(font.getStringBounds(this.getToolTipText(), frc).getWidth());
-				return new Point(-offset, 0); //shift the tooltip to the right
+				int offsetX = (int)(font.getStringBounds(this.getToolTipText(), frc).getWidth());
+				int offsetY = (int)(font.getStringBounds(this.getToolTipText(), frc).getHeight());
+				return new Point(-offsetX, offsetY); //shift the tooltip to the right
 			}
 		};
 		button.setSize(scaledImage.getWidth(), scaledImage.getHeight());
