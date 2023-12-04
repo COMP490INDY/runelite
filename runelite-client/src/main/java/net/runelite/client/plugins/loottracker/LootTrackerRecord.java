@@ -39,12 +39,10 @@ class LootTrackerRecord
 	private final int kills;
 
 	/**
-	 * A record is only collapsed from the LootTrackerBox that last contained them.
-	 * A record's collapsed state is only checked by it's host LootTrackerBox.
 	 * If record is new, the box that will be built with it will not be instantiated
 	 * in a collapsed state.
 	 */
-	boolean collapseHostTrackerBox = false;
+	boolean boxCollapsed = false;
 
 	/**
 	 * Checks if this record matches specified id
