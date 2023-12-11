@@ -222,22 +222,6 @@ class LootTrackerBox extends JPanel
 		}
 	}
 
-	/**
-	 * Checks for record compatibility before checking record's last collapsed state
-	 * @param record to match
-	 * @return whether this box should be collapsed afer it's built
-	 */
-
-	boolean shouldCollapse(final LootTrackerRecord record)
-	{
-		if (!matches(record))
-		{
-			throw new IllegalArgumentException(record.toString());
-		}
-
-		return record.isBoxCollapsed();
-	}
-
 	void rebuild()
 	{
 		buildItems();
