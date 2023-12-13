@@ -37,18 +37,7 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
-import javax.swing.JToggleButton;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicButtonUI;
 import javax.swing.plaf.basic.BasicToggleButtonUI;
@@ -117,7 +106,9 @@ class LootTrackerPanel extends PluginPanel
 	// Individual records for the individual kills this session
 	private final List<LootTrackerRecord> sessionRecords = new ArrayList<>();
 	private final List<LootTrackerBox> boxes = new ArrayList<>();
-	private final Map<String, Boolean> collapsedRecords = new HashMap<String, Boolean>();
+	// Remember box state between rebuilding boxes from records
+	private enum BoxState { EXPANDED, COLLAPSED } // Explicit flags for clarity
+	private final Map<String, BoxState> collapsedRecords = new HashMap<>();
 
 	private final ItemManager itemManager;
 	private final LootTrackerPlugin plugin;
@@ -379,7 +370,7 @@ class LootTrackerPanel extends PluginPanel
 		}
 		final LootTrackerRecord record = new LootTrackerRecord(eventName, subTitle, type, items, kills);
 		sessionRecords.add(record);
-		collapsedRecords.put(record.getTitle(), false);
+		collapsedRecords.put(record.getTitle(), BoxState.EXPANDED);
 
 		if (hideIgnoredItems && plugin.isEventIgnored(eventName))
 		{
@@ -401,6 +392,7 @@ class LootTrackerPanel extends PluginPanel
 	{
 		aggregateRecords.clear();
 		sessionRecords.clear();
+		collapsedRecords.clear();
 	}
 
 	/**
@@ -571,15 +563,12 @@ class LootTrackerPanel extends PluginPanel
 					if (box.isCollapsed())
 					{
 						box.expand();
+						collapsedRecords.put(box.getId(), BoxState.EXPANDED);
 					}
 					else
 					{
 						box.collapse();
-					}
-
-					if (collapsedRecords.containsKey(box.getId()))
-					{
-						collapsedRecords.put(box.getId(), box.isCollapsed());
+						collapsedRecords.put(box.getId(), BoxState.COLLAPSED);
 					}
 
 					updateCollapseText();
@@ -644,13 +633,23 @@ class LootTrackerPanel extends PluginPanel
 			logsContainer.remove(boxes.remove(0));
 		}
 
-		// Collapse box from record's previous boxCollapsed state
-		if (collapsedRecords.get(box.getId()))
+		// Collapse box if predecessor box was collapsed
+
+		if (collapsedRecords.containsKey(box.getId()))
 		{
-			box.collapse();
+			BoxState previousState = collapsedRecords.get(box.getId());
+			if (previousState == BoxState.COLLAPSED)
+			{
+				box.collapse();
+			}
+			else
+			{
+				box.expand();
+			}
 		}
 		else
 		{
+			collapsedRecords.put(box.getId(),BoxState.EXPANDED);
 			box.expand();
 		}
 
