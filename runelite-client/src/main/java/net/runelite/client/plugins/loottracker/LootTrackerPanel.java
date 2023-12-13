@@ -503,7 +503,7 @@ class LootTrackerPanel extends PluginPanel
 	 * This method decides what to do with a new record, if a similar log exists, it will
 	 * add its items to it, updating the log's overall price and kills. If not, a new log will be created
 	 * to hold this entry's information.
-	 * If a new log box is created and has a predecessor of the same record, the predecessor's collapsed state
+	 * If a new log box is created and a predecessor of the same record existed, the predecessor's collapsed state
 	 * is carried over to new log box.
 	 */
 	private LootTrackerBox buildBox(LootTrackerRecord record)
@@ -636,7 +636,6 @@ class LootTrackerPanel extends PluginPanel
 		}
 
 		// Collapse box if predecessor box was collapsed
-
 		if (collapsedRecords.containsKey(box.getId()))
 		{
 			BoxState previousState = collapsedRecords.get(box.getId());
