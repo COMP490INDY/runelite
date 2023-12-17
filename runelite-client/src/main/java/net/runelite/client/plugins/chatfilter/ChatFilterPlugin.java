@@ -213,22 +213,29 @@ public class ChatFilterPlugin extends Plugin
 				break;
 		}
 
-		boolean shouldCollapse = chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT
-			? config.collapsePlayerChat()
-			: COLLAPSIBLE_MESSAGETYPES.contains(chatMessageType) && config.collapseGameChat();
-		if (!blockMessage && shouldCollapse)
+//		boolean shouldCollapse = chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT
+//			? config.collapsePlayerChat()
+//			: COLLAPSIBLE_MESSAGETYPES.contains(chatMessageType) && config.collapseGameChat();
+//		if (!blockMessage && shouldCollapse)
+//		{
+//			Duplicate duplicateCacheEntry = duplicateChatCache.get(name + ":" + message);
+//			// If messageId is -1 then this is a replayed message, which we can't easily collapse since we don't know
+//			// the most recent message. This is only for public chat since it is the only thing both replayed and also
+//			// collapsed. Just allow uncollapsed playback.
+//			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1)
+//			{
+//				blockMessage = duplicateCacheEntry.messageId != messageId ||
+//					((chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT) &&
+//						config.maxRepeatedPublicChats() > 0 && duplicateCacheEntry.count > config.maxRepeatedPublicChats());
+//				duplicateCount = duplicateCacheEntry.count;
+//			}
+//		}
+		// check against duplicate messages in cache
+		if (!blockMessage)
 		{
+			blockMessage = blockDuplicateMessage(chatMessageType, name, message, messageId);
 			Duplicate duplicateCacheEntry = duplicateChatCache.get(name + ":" + message);
-			// If messageId is -1 then this is a replayed message, which we can't easily collapse since we don't know
-			// the most recent message. This is only for public chat since it is the only thing both replayed and also
-			// collapsed. Just allow uncollapsed playback.
-			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1)
-			{
-				blockMessage = duplicateCacheEntry.messageId != messageId ||
-					((chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT) &&
-						config.maxRepeatedPublicChats() > 0 && duplicateCacheEntry.count > config.maxRepeatedPublicChats());
-				duplicateCount = duplicateCacheEntry.count;
-			}
+			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1) duplicateCount = duplicateCacheEntry.count;
 		}
 
 		if (blockMessage)
@@ -286,7 +293,42 @@ public class ChatFilterPlugin extends Plugin
 		}
 	}
 
-	boolean shouldFilterPlayerMessage(String playerName)
+	public boolean blockDuplicateMessage(ChatMessageType type, String messageSender, String message, int messageId)
+	{
+
+		boolean blockMessage = false;
+		boolean shouldCollapse = type == PUBLICCHAT || type == MODCHAT
+				? config.collapsePlayerChat()
+				: COLLAPSIBLE_MESSAGETYPES.contains(type) && config.collapseGameChat();
+
+		if (shouldCollapse)
+		{
+			Duplicate duplicateCacheEntry = duplicateChatCache.get(messageSender + ":" + message);
+			// If messageId is -1 then this is a replayed message, which we can't easily collapse since we don't know
+			// the most recent message. This is only for public chat since it is the only thing both replayed and also
+			// collapsed. Just allow uncollapsed playback.
+			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1)
+			{
+				blockMessage = duplicateCacheEntry.messageId != messageId ||
+						((type == PUBLICCHAT || type == MODCHAT) &&
+								config.maxRepeatedPublicChats() > 0 && duplicateCacheEntry.count > config.maxRepeatedPublicChats());
+			}
+		}
+
+		return shouldCollapse && blockMessage;
+	}
+
+	public boolean blockDuplicateMessage(ChatMessage chatMessage)
+	{
+		ChatMessageType chatMessageType = chatMessage.getType();
+		String name = chatMessage.getName();
+		String message = chatMessage.getMessage();
+		int msgId = chatMessage.getMessageNode().getId();
+
+		return blockDuplicateMessage(chatMessageType, name, message, msgId);
+	}
+
+	public boolean shouldFilterPlayerMessage(String playerName)
 	{
 		boolean isMessageFromSelf = playerName.equals(client.getLocalPlayer().getName());
 		return !isMessageFromSelf &&
