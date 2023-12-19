@@ -234,7 +234,6 @@ class PluginListItem extends JPanel implements SearchablePlugin
 			menu.add(menuItem);
 		}
 
-		int tooltipTimeout = ToolTipManager.sharedInstance().getInitialDelay();
 		label.addMouseListener(new MouseAdapter()
 		{
 			private Color lastForeground;
@@ -251,7 +250,7 @@ class PluginListItem extends JPanel implements SearchablePlugin
 			@Override
 			public void mouseEntered(MouseEvent mouseEvent)
 			{
-//				ToolTipManager.sharedInstance().setDismissDelay(1000*3600);
+				ToolTipManager.sharedInstance().setDismissDelay(1000*3600);
 				lastForeground = label.getForeground();
 				label.setForeground(ColorScheme.BRAND_ORANGE);
 			}
@@ -259,7 +258,6 @@ class PluginListItem extends JPanel implements SearchablePlugin
 			@Override
 			public void mouseExited(MouseEvent mouseEvent)
 			{
-//				ToolTipManager.sharedInstance().setDismissDelay(tooltipTimeout);
 				label.setForeground(lastForeground);
 			}
 		});
