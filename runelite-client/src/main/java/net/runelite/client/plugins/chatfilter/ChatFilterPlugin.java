@@ -208,7 +208,7 @@ public class ChatFilterPlugin extends Plugin
 			case CLAN_CHAT:
 			case CLAN_GUEST_CHAT:
 			case CLAN_GIM_CHAT:
-				if (shouldFilterPlayerMessage(Text.removeTags(name)))
+				if (canFilterPlayer(Text.removeTags(name)))
 				{
 					message = censorMessage(messageNode, name, message);
 					blockMessage = message == null;
@@ -276,7 +276,7 @@ public class ChatFilterPlugin extends Plugin
 	@Subscribe
 	public void onOverheadTextChanged(OverheadTextChanged event)
 	{
-		if (!(event.getActor() instanceof Player) || event.getActor().getName() == null || !shouldFilterPlayerMessage(event.getActor().getName())) // NOPMD: SimplifyConditional
+		if (!(event.getActor() instanceof Player) || event.getActor().getName() == null || !canFilterPlayer(event.getActor().getName())) // NOPMD: SimplifyConditional
 		{
 			return;
 		}
@@ -346,7 +346,7 @@ public class ChatFilterPlugin extends Plugin
 		return blockDuplicateMessage(chatMessageType, name, message, msgId);
 	}
 
-	public boolean shouldFilterPlayerMessage(String playerName)
+	public boolean canFilterPlayer(String playerName)
 	{
 		boolean isMessageFromSelf = playerName.equals(client.getLocalPlayer().getName());
 		return !isMessageFromSelf &&

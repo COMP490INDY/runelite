@@ -77,9 +77,6 @@ public class ChatNotificationsPlugin extends Plugin
 	private ChatFilterConfig chatFilterConfig;
 
 	@Inject
-	private ChatFilterPlugin chatFilterPlugin;
-
-	@Inject
 	@Named("runelite.title")
 	private String runeliteTitle;
 
@@ -245,11 +242,6 @@ public class ChatNotificationsPlugin extends Plugin
 				}
 				break;
 		}
-
-		// Don't notify if message should be filtered
-		if (chatFilterPlugin.shouldFilterPlayerMessage(chatMessage.getName())) return;
-
-		if (chatFilterPlugin.blockDuplicateMessage(chatMessage)) return;
 
 		if (usernameMatcher == null && client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null)
 		{
