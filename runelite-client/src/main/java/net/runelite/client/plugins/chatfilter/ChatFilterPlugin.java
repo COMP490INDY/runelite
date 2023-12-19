@@ -346,7 +346,7 @@ public class ChatFilterPlugin extends Plugin
 		return blockDuplicateMessage(chatMessageType, name, message, msgId);
 	}
 
-	public boolean shouldFilterPlayerMessage(String playerName)
+	public boolean canFilterPlayer(String playerName)
 	{
 		boolean isMessageFromSelf = playerName.equals(client.getLocalPlayer().getName());
 		return !isMessageFromSelf &&
