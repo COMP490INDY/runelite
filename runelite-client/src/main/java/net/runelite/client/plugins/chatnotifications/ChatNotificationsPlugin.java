@@ -52,8 +52,6 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.chatfilter.ChatFilterConfig;
-import net.runelite.client.plugins.chatfilter.ChatFilterPlugin;
 import net.runelite.client.util.Text;
 
 @PluginDescriptor(
@@ -72,9 +70,6 @@ public class ChatNotificationsPlugin extends Plugin
 
 	@Inject
 	private Notifier notifier;
-
-	@Inject
-	private ChatFilterConfig chatFilterConfig;
 
 	@Inject
 	@Named("runelite.title")
@@ -212,21 +207,9 @@ public class ChatNotificationsPlugin extends Plugin
 			case MODCHAT:
 			case PUBLICCHAT:
 			case FRIENDSCHAT:
-				// Don't notify is friends chat members are filtered
-				if (chatFilterConfig.filterFriendsChat())
-				{
-					return;
-				}
-				break;
 			case CLAN_CHAT:
 			case CLAN_GUEST_CHAT:
 			case CLAN_GIM_CHAT:
-				// Don't notify if clan chat is filtered
-				if (chatFilterConfig.filterClanChat())
-				{
-					return;
-				}
-				break;
 			case AUTOTYPER:
 			case MODAUTOTYPER:
 				if (client.getLocalPlayer() != null && Text.toJagexName(Text.removeTags(chatMessage.getName())).equals(client.getLocalPlayer().getName()))
