@@ -639,6 +639,16 @@ class LootTrackerPanel extends PluginPanel
 			logsContainer.remove(boxes.remove(0));
 		}
 
+		// Collapse box from record's previous boxCollapsed state
+		if (box.shouldCollapse(record))
+		{
+			box.collapse();
+		}
+		else
+		{
+			box.expand();
+		}
+
 		return box;
 	}
 

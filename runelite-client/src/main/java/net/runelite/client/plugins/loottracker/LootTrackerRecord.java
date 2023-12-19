@@ -39,6 +39,12 @@ class LootTrackerRecord
 	private final int kills;
 
 	/**
+	 * If record is new, the box that will be built with it will not be instantiated
+	 * in a collapsed state.
+	 */
+	boolean boxCollapsed = false;
+
+	/**
 	 * Checks if this record matches specified id
 	 *
 	 * @param id other record id
