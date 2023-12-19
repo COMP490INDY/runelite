@@ -53,7 +53,6 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.chatfilter.ChatFilterConfig;
-import net.runelite.client.plugins.chatfilter.ChatFilterPlugin;
 import net.runelite.client.util.Text;
 
 @PluginDescriptor(

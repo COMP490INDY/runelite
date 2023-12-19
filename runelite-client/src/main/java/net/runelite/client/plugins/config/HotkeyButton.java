@@ -29,15 +29,12 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
 import javax.swing.JButton;
 import lombok.Getter;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.config.ModifierlessKeybind;
 import net.runelite.client.ui.FontManager;
-import org.jetbrains.annotations.NotNull;
 import java.util.HashSet;
 
 class HotkeyButton extends JButton
