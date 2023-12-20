@@ -34,24 +34,10 @@ import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
-import javax.swing.JToggleButton;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicButtonUI;
 import javax.swing.plaf.basic.BasicToggleButtonUI;
@@ -120,6 +106,9 @@ class LootTrackerPanel extends PluginPanel
 	// Individual records for the individual kills this session
 	private final List<LootTrackerRecord> sessionRecords = new ArrayList<>();
 	private final List<LootTrackerBox> boxes = new ArrayList<>();
+	// Remember box state between rebuilding boxes from records
+	private enum BoxState { EXPANDED, COLLAPSED } // Explicit flags for clarity
+	private final Map<String, BoxState> collapsedRecords = new HashMap<>();
 
 	private final ItemManager itemManager;
 	private final LootTrackerPlugin plugin;
@@ -381,6 +370,7 @@ class LootTrackerPanel extends PluginPanel
 		}
 		final LootTrackerRecord record = new LootTrackerRecord(eventName, subTitle, type, items, kills);
 		sessionRecords.add(record);
+		collapsedRecords.put(record.getTitle(), BoxState.EXPANDED);
 
 		if (hideIgnoredItems && plugin.isEventIgnored(eventName))
 		{
@@ -402,6 +392,7 @@ class LootTrackerPanel extends PluginPanel
 	{
 		aggregateRecords.clear();
 		sessionRecords.clear();
+		collapsedRecords.clear();
 	}
 
 	/**
@@ -512,6 +503,8 @@ class LootTrackerPanel extends PluginPanel
 	 * This method decides what to do with a new record, if a similar log exists, it will
 	 * add its items to it, updating the log's overall price and kills. If not, a new log will be created
 	 * to hold this entry's information.
+	 * If a new log box is created and a predecessor of the same record existed, the predecessor's collapsed state
+	 * is carried over to new log box.
 	 */
 	private LootTrackerBox buildBox(LootTrackerRecord record)
 	{
@@ -572,11 +565,14 @@ class LootTrackerPanel extends PluginPanel
 					if (box.isCollapsed())
 					{
 						box.expand();
+						collapsedRecords.put(box.getId(), BoxState.EXPANDED);
 					}
 					else
 					{
 						box.collapse();
+						collapsedRecords.put(box.getId(), BoxState.COLLAPSED);
 					}
+
 					updateCollapseText();
 				}
 			}
@@ -639,13 +635,22 @@ class LootTrackerPanel extends PluginPanel
 			logsContainer.remove(boxes.remove(0));
 		}
 
-		// Collapse box from record's previous boxCollapsed state
-		if (box.shouldCollapse(record))
+		// Collapse box if predecessor box was collapsed
+		if (collapsedRecords.containsKey(box.getId()))
 		{
-			box.collapse();
+			BoxState previousState = collapsedRecords.get(box.getId());
+			if (previousState == BoxState.COLLAPSED)
+			{
+				box.collapse();
+			}
+			else
+			{
+				box.expand();
+			}
 		}
 		else
 		{
+			collapsedRecords.put(box.getId(),BoxState.EXPANDED);
 			box.expand();
 		}
 
