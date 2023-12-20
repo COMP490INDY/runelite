@@ -37,14 +37,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JToggleButton;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
@@ -257,6 +250,7 @@ class PluginListItem extends JPanel implements SearchablePlugin
 			@Override
 			public void mouseEntered(MouseEvent mouseEvent)
 			{
+				ToolTipManager.sharedInstance().setDismissDelay(1000*3600);
 				lastForeground = label.getForeground();
 				label.setForeground(ColorScheme.BRAND_ORANGE);
 			}
