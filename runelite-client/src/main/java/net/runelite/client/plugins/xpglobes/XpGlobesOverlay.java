@@ -51,6 +51,7 @@ import net.runelite.client.ui.overlay.Overlay;
 import static net.runelite.client.ui.overlay.OverlayManager.OPTION_CONFIGURE;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayUtil;
+import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.tooltip.Tooltip;
@@ -306,7 +307,8 @@ public class XpGlobesOverlay extends Overlay
 		xpTooltip.getChildren().add(LineComponent.builder()
 			.left("Current XP:")
 			.leftColor(Color.ORANGE)
-			.right(skillCurrentXp)
+//			.right(skillCurrentXp)
+			.right("01234567891")
 			.build());
 
 		if (goalXp > mouseOverSkill.getCurrentXp())
@@ -356,13 +358,12 @@ public class XpGlobesOverlay extends Overlay
 			{
 				String timeLeft = xpTrackerService.getTimeTilGoal(mouseOverSkill.getSkill());
 				xpTooltip.getChildren().add(LineComponent.builder()
-					.left("Time left:")
+					.left("Time left: ")
 					.leftColor(Color.ORANGE)
 					.right(timeLeft)
 					.build());
 			}
 		}
-
 		tooltipManager.add(this.xpTooltip);
 	}
 }
