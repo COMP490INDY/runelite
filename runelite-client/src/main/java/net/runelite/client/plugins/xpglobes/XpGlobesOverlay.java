@@ -307,8 +307,8 @@ public class XpGlobesOverlay extends Overlay
 		xpTooltip.getChildren().add(LineComponent.builder()
 			.left("Current XP:")
 			.leftColor(Color.ORANGE)
-//			.right(skillCurrentXp)
-			.right("01234567891")
+			.right(skillCurrentXp)
+//			.right("01234567891")
 			.build());
 
 		if (goalXp > mouseOverSkill.getCurrentXp())
