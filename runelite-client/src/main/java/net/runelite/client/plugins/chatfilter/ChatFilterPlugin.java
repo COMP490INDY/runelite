@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class ChatFilterPlugin extends Plugin
 		int count;
 	}
 
-	private final LinkedHashMap<String, Duplicate> duplicateChatCache = new LinkedHashMap<String, Duplicate>()
+	private final LinkedHashMap<String, Duplicate> duplicateChatCache = new LinkedHashMap<>()
 	{
 		private static final int MAX_ENTRIES = 100;
 
@@ -114,6 +115,19 @@ public class ChatFilterPlugin extends Plugin
 			return size() > MAX_ENTRIES;
 		}
 	};
+
+	private static class FilterCacheMap extends LinkedHashMap<Integer, String>
+	{
+		private static final int MAX_ENTRIES = 100;
+
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<Integer, String> eldest)
+		{
+			return size() > MAX_ENTRIES;
+		}
+	}
+
+	private final Map<ChatMessageType, FilterCacheMap> filterCache = new HashMap<>();
 
 	@Inject
 	private Client client;
@@ -139,6 +153,8 @@ public class ChatFilterPlugin extends Plugin
 	{
 		filteredPatterns = Collections.emptyList();
 		filteredNamePatterns = Collections.emptyList();
+		duplicateChatCache.clear();
+		filterCache.clear();
 		client.refreshChat();
 	}
 
@@ -149,9 +165,11 @@ public class ChatFilterPlugin extends Plugin
 		{
 			// Login drops references to all messages and also resets the global message id counter.
 			// Invalidate the message id so it doesn't collide later when rebuilding the chatfilter.
+			case CONNECTION_LOST:
 			case HOPPING:
 			case LOGGING_IN:
 				duplicateChatCache.values().forEach(d -> d.messageId = -1);
+				filterCache.clear();
 		}
 	}
 
@@ -190,9 +208,9 @@ public class ChatFilterPlugin extends Plugin
 			case CLAN_CHAT:
 			case CLAN_GUEST_CHAT:
 			case CLAN_GIM_CHAT:
-				if (shouldFilterPlayerMessage(Text.removeTags(name)))
+				if (canFilterPlayer(Text.removeTags(name)))
 				{
-					message = censorMessage(name, message);
+					message = censorMessage(messageNode, name, message);
 					blockMessage = message == null;
 				}
 				break;
@@ -207,28 +225,35 @@ public class ChatFilterPlugin extends Plugin
 			case CLAN_GIM_MESSAGE:
 				if (config.filterGameChat())
 				{
-					message = censorMessage(null, message);
+					message = censorMessage(messageNode, null, message);
 					blockMessage = message == null;
 				}
 				break;
 		}
 
-		boolean shouldCollapse = chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT
-			? config.collapsePlayerChat()
-			: COLLAPSIBLE_MESSAGETYPES.contains(chatMessageType) && config.collapseGameChat();
-		if (!blockMessage && shouldCollapse)
+//		boolean shouldCollapse = chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT
+//			? config.collapsePlayerChat()
+//			: COLLAPSIBLE_MESSAGETYPES.contains(chatMessageType) && config.collapseGameChat();
+//		if (!blockMessage && shouldCollapse)
+//		{
+//			Duplicate duplicateCacheEntry = duplicateChatCache.get(name + ":" + message);
+//			// If messageId is -1 then this is a replayed message, which we can't easily collapse since we don't know
+//			// the most recent message. This is only for public chat since it is the only thing both replayed and also
+//			// collapsed. Just allow uncollapsed playback.
+//			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1)
+//			{
+//				blockMessage = duplicateCacheEntry.messageId != messageId ||
+//					((chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT) &&
+//						config.maxRepeatedPublicChats() > 0 && duplicateCacheEntry.count > config.maxRepeatedPublicChats());
+//				duplicateCount = duplicateCacheEntry.count;
+//			}
+//		}
+		// check against duplicate messages in cache
+		if (!blockMessage)
 		{
+			blockMessage = blockDuplicateMessage(chatMessageType, name, message, messageId);
 			Duplicate duplicateCacheEntry = duplicateChatCache.get(name + ":" + message);
-			// If messageId is -1 then this is a replayed message, which we can't easily collapse since we don't know
-			// the most recent message. This is only for public chat since it is the only thing both replayed and also
-			// collapsed. Just allow uncollapsed playback.
-			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1)
-			{
-				blockMessage = duplicateCacheEntry.messageId != messageId ||
-					((chatMessageType == PUBLICCHAT || chatMessageType == MODCHAT) &&
-						config.maxRepeatedPublicChats() > 0 && duplicateCacheEntry.count > config.maxRepeatedPublicChats());
-				duplicateCount = duplicateCacheEntry.count;
-			}
+			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1) duplicateCount = duplicateCacheEntry.count;
 		}
 
 		if (blockMessage)
@@ -251,7 +276,7 @@ public class ChatFilterPlugin extends Plugin
 	@Subscribe
 	public void onOverheadTextChanged(OverheadTextChanged event)
 	{
-		if (!(event.getActor() instanceof Player) || event.getActor().getName() == null || !shouldFilterPlayerMessage(event.getActor().getName())) // NOPMD: SimplifyConditional
+		if (!(event.getActor() instanceof Player) || event.getActor().getName() == null || !canFilterPlayer(event.getActor().getName())) // NOPMD: SimplifyConditional
 		{
 			return;
 		}
@@ -286,7 +311,42 @@ public class ChatFilterPlugin extends Plugin
 		}
 	}
 
-	boolean shouldFilterPlayerMessage(String playerName)
+	public boolean blockDuplicateMessage(ChatMessageType type, String messageSender, String message, int messageId)
+	{
+
+		boolean blockMessage = false;
+		boolean shouldCollapse = type == PUBLICCHAT || type == MODCHAT
+				? config.collapsePlayerChat()
+				: COLLAPSIBLE_MESSAGETYPES.contains(type) && config.collapseGameChat();
+
+		if (shouldCollapse)
+		{
+			Duplicate duplicateCacheEntry = duplicateChatCache.get(messageSender + ":" + message);
+			// If messageId is -1 then this is a replayed message, which we can't easily collapse since we don't know
+			// the most recent message. This is only for public chat since it is the only thing both replayed and also
+			// collapsed. Just allow uncollapsed playback.
+			if (duplicateCacheEntry != null && duplicateCacheEntry.messageId != -1)
+			{
+				blockMessage = duplicateCacheEntry.messageId != messageId ||
+						((type == PUBLICCHAT || type == MODCHAT) &&
+								config.maxRepeatedPublicChats() > 0 && duplicateCacheEntry.count > config.maxRepeatedPublicChats());
+			}
+		}
+
+		return shouldCollapse && blockMessage;
+	}
+
+	public boolean blockDuplicateMessage(ChatMessage chatMessage)
+	{
+		ChatMessageType chatMessageType = chatMessage.getType();
+		String name = chatMessage.getName();
+		String message = chatMessage.getMessage();
+		int msgId = chatMessage.getMessageNode().getId();
+
+		return blockDuplicateMessage(chatMessageType, name, message, msgId);
+	}
+
+	public boolean canFilterPlayer(String playerName)
 	{
 		boolean isMessageFromSelf = playerName.equals(client.getLocalPlayer().getName());
 		return !isMessageFromSelf &&
@@ -327,7 +387,7 @@ public class ChatFilterPlugin extends Plugin
 		String strippedAccents = stripAccents(strippedMessage);
 		assert strippedMessage.length() == strippedAccents.length();
 
-		if (username != null && shouldFilterByName(username))
+		if (username != null && isNameFiltered(username))
 		{
 			switch (config.filterType())
 			{
@@ -374,6 +434,25 @@ public class ChatFilterPlugin extends Plugin
 		return filtered ? strippedMessage : message;
 	}
 
+	private String censorMessage(MessageNode messageNode, String username, String message)
+	{
+		FilterCacheMap map = this.filterCache.get(messageNode.getType());
+		if (map == null)
+		{
+			map = new FilterCacheMap();
+			this.filterCache.put(messageNode.getType(), map);
+		}
+
+		if (map.containsKey(messageNode.getId()))
+		{
+			return map.get(messageNode.getId());
+		}
+
+		String censoredMessage = censorMessage(username, message);
+		map.put(messageNode.getId(), censoredMessage);
+		return censoredMessage;
+	}
+
 	void updateFilteredPatterns()
 	{
 		List<Pattern> patterns = new ArrayList<>();
@@ -398,6 +477,8 @@ public class ChatFilterPlugin extends Plugin
 
 		filteredPatterns = patterns;
 		filteredNamePatterns = namePatterns;
+
+		filterCache.clear();
 	}
 
 	private String stripAccents(String input)
@@ -432,7 +513,7 @@ public class ChatFilterPlugin extends Plugin
 	}
 
 	@VisibleForTesting
-	boolean shouldFilterByName(final String playerName)
+	boolean isNameFiltered(final String playerName)
 	{
 		String sanitizedName = Text.standardize(playerName);
 		for (Pattern pattern : filteredNamePatterns)

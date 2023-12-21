@@ -24,15 +24,18 @@
  */
 package net.runelite.client.plugins.config;
 
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Set;
 import javax.swing.JButton;
 import lombok.Getter;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.config.ModifierlessKeybind;
 import net.runelite.client.ui.FontManager;
+import java.util.HashSet;
 
 class HotkeyButton extends JButton
 {
@@ -41,6 +44,11 @@ class HotkeyButton extends JButton
 
 	public HotkeyButton(Keybind value, boolean modifierless)
 	{
+		// Create a blank set and update the focus traversal keys
+		Set<AWTKeyStroke> set = new HashSet<AWTKeyStroke>();
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().setDefaultFocusTraversalKeys(
+				KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, set
+		);
 		setFont(FontManager.getDefaultFont().deriveFont(12.f));
 		setValue(value);
 		addMouseListener(new MouseAdapter()
@@ -54,6 +62,7 @@ class HotkeyButton extends JButton
 					// We have to use a mouse adapter instead of an action listener so the press action key (space) can be bound
 					setValue(Keybind.NOT_SET);
 				}
+
 			}
 		});
 
